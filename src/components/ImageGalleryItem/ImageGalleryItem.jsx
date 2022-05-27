@@ -1,40 +1,33 @@
 import PropTypes from 'prop-types';
 import { Image, Item } from './ImageGalleryItem.styled';
 import { Modal } from '../Modal/Modal';
-import { Component } from 'react';
+import { useState } from 'react';
 
-export class ImageGalleryItem extends Component {
-  state = {
-    modalIsOpen: false,
-  };
+export const ImageGalleryItem = ({ img, largeImg, tags }) => {
+  const [modalIsOpen, setModalIsOpen] = useState(false);
 
-  toggleOpenModal = () => {
-    this.setState(prev => ({ modalIsOpen: !prev.modalIsOpen }));
-  };
-
-  handleKeyDown = e => {
+  const handleKeyDown = e => {
     if (e.key === 'Escape') {
-      this.toggleOpenModal();
+      toggleOpenModal();
     }
   };
 
-  render() {
-    const { modalIsOpen } = this.state;
-    let { img, largeImg, tags } = this.props;
+  const toggleOpenModal = () => {
+    setModalIsOpen(!modalIsOpen);
+  };
 
-    return (
-      <Item className="gallery-item" onClick={this.toggleOpenModal}>
-        <Image src={`${img}`} alt={`${tags}`} />
+  return (
+    <Item onClick={toggleOpenModal}>
+      <Image src={`${img}`} alt={`${tags}`} />
 
-        {modalIsOpen && (
-          <>
-            <Modal img={largeImg} alt={tags} closeModal={this.handleKeyDown} />
-          </>
-        )}
-      </Item>
-    );
-  }
-}
+      {modalIsOpen && (
+        <>
+          <Modal img={largeImg} alt={tags} closeModal={handleKeyDown} />
+        </>
+      )}
+    </Item>
+  );
+};
 
 ImageGalleryItem.propTypes = {
   img: PropTypes.string.isRequired,

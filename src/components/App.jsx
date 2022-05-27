@@ -1,76 +1,72 @@
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Button } from './Button/Button';
-import { Component } from 'react';
+import { useState } from 'react';
 import { getPhotosByKey } from '../js/API';
 import { Notify } from 'notiflix';
 import { Loader } from './Loader/Loader';
 
-export class App extends Component {
-  state = {
-    imgList: [],
-    page: 1,
-    search: '',
-    isLoading: false,
-    isFinished: false,
+export const App = () => {
+  const [imgList, setImgList] = useState([]);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
+
+  const checkEndOfHits = list => {
+    if (list.length < 12) setIsFinished(true);
   };
 
-  checkEndOfHits(list) {
-    if (list.length < 12) this.setState({ isFinished: true });
-  }
-
-  handleSubmit = async search => {
+  const handleSubmit = async search => {
     if (!search.trim()) {
       Notify.failure('Please enter something in search field');
       return;
     }
 
-    this.setState({ imgList: [], isLoading: true, isFinished: false });
+    setImgList([]);
+    setIsLoading(true);
+    setIsFinished(false);
 
     try {
       const items = await getPhotosByKey(search);
-      this.checkEndOfHits(items);
+      checkEndOfHits(items);
 
       if (items.length === 0) {
         Notify.warning("Sorry we didn't find anything");
       }
 
-      this.setState(prev => ({ imgList: items, search, page: prev.page + 1 }));
+      setImgList(items);
+      setSearch(search);
+      setPage(page + 1);
     } catch (err) {
       Notify.failure('Oops!! Something goes wrong please try again');
     } finally {
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     }
   };
 
-  loadMore = async () => {
-    this.setState({ isLoading: true });
+  const loadMore = async () => {
+    setIsLoading(true);
 
     try {
-      const newItems = await getPhotosByKey(this.state.search, this.state.page);
-      this.checkEndOfHits(newItems);
+      const newItems = await getPhotosByKey(search, page);
+      checkEndOfHits(newItems);
 
-      this.setState(prev => ({
-        imgList: [...prev.imgList, ...newItems],
-        page: prev.page + 1,
-      }));
+      setImgList([...imgList, ...newItems]);
+      setPage(page + 1);
     } catch (err) {
       Notify.failure('Oops!! Something goes wrong please try again');
     } finally {
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     }
   };
 
-  render() {
-    const { isLoading, imgList, isFinished } = this.state;
-
-    return (
-      <>
-        <Searchbar onSubmit={this.handleSubmit} />
-        <ImageGallery imgList={imgList} />
-        {isLoading && <Loader />}
-        {imgList.length && !isFinished && <Button loadMore={this.loadMore} />}
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Searchbar onSubmit={handleSubmit} />
+      <ImageGallery imgList={imgList} />
+      {isLoading && <Loader />}
+      {imgList.length && !isFinished && <Button loadMore={loadMore} />}
+    </>
+  );
+};
