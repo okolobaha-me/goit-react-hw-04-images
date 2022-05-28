@@ -1,10 +1,12 @@
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Button } from './Button/Button';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getPhotosByKey } from '../js/API';
 import { Notify } from 'notiflix';
 import { Loader } from './Loader/Loader';
+import { createPortal } from 'react-dom';
+import { Modal } from './Modal/Modal';
 
 export const App = () => {
   const [imgList, setImgList] = useState([]);
@@ -12,32 +14,26 @@ export const App = () => {
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState('');
 
   const checkEndOfHits = list => {
     if (list.length < 12) setIsFinished(true);
   };
 
-  const handleSubmit = async search => {
-    if (!search.trim()) {
-      Notify.failure('Please enter something in search field');
-      return;
-    }
-
-    setImgList([]);
+  const loadPhotos = async () => {
     setIsLoading(true);
-    setIsFinished(false);
 
     try {
-      const items = await getPhotosByKey(search);
+      const items = await getPhotosByKey(search, page);
       checkEndOfHits(items);
 
       if (items.length === 0) {
         Notify.warning("Sorry we didn't find anything");
+        return;
       }
 
-      setImgList(items);
-      setSearch(search);
-      setPage(page + 1);
+      setImgList(prevState => [...prevState, ...items]);
     } catch (err) {
       Notify.failure('Oops!! Something goes wrong please try again');
     } finally {
@@ -45,28 +41,62 @@ export const App = () => {
     }
   };
 
-  const loadMore = async () => {
-    setIsLoading(true);
+  const firstUpdate = useRef(true);
+  const shouldEffectPage = useRef(false);
 
-    try {
-      const newItems = await getPhotosByKey(search, page);
-      checkEndOfHits(newItems);
-
-      setImgList([...imgList, ...newItems]);
-      setPage(page + 1);
-    } catch (err) {
-      Notify.failure('Oops!! Something goes wrong please try again');
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (firstUpdate.current) {
+      firstUpdate.current = false;
+      return;
     }
+
+    setImgList([]);
+    loadPhotos();
+  }, [search]);
+
+  useEffect(() => {
+    if (!shouldEffectPage.current) {
+      shouldEffectPage.current = true;
+      return;
+    }
+
+    loadPhotos();
+  }, [page]);
+
+  const handleSubmit = async query => {
+    shouldEffectPage.current = false;
+    await setPage(1);
+    shouldEffectPage.current = true;
+    setSearch(query);
+  };
+
+  const toggleOpenModal = photo => {
+    setIsModalOpen(prevState => !prevState);
+    setModalImage(photo ? photo : '');
   };
 
   return (
     <>
       <Searchbar onSubmit={handleSubmit} />
-      <ImageGallery imgList={imgList} />
+      <ImageGallery imgList={imgList} toggleOpenModal={toggleOpenModal} />
       {isLoading && <Loader />}
-      {imgList.length && !isFinished && <Button loadMore={loadMore} />}
+      {imgList.length && !isFinished && !isLoading && (
+        <Button
+          loadMore={() => {
+            setPage(prevState => prevState + 1);
+          }}
+        />
+      )}
+
+      {isModalOpen &&
+        createPortal(
+          <Modal
+            img={modalImage}
+            alt={'asdasd'}
+            toggleOpenModal={toggleOpenModal}
+          />,
+          document.getElementById('modal-root')
+        )}
     </>
   );
 };
