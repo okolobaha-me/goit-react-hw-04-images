@@ -7,6 +7,7 @@ import { Notify } from 'notiflix';
 import { Loader } from './Loader/Loader';
 import { createPortal } from 'react-dom';
 import { Modal } from './Modal/Modal';
+import { PER_PAGE } from '../js/globalConstants';
 
 export const App = () => {
   const [imgList, setImgList] = useState([]);
@@ -18,41 +19,20 @@ export const App = () => {
   const [modalImage, setModalImage] = useState('');
 
   const checkEndOfHits = list => {
-    if (list.length < 12) setIsFinished(true);
+    if (list.length < PER_PAGE) setIsFinished(true);
   };
 
-  const loadPhotos = async () => {
-    setIsLoading(true);
-
-    try {
-      const items = await getPhotosByKey(search, page);
-      checkEndOfHits(items);
-
-      if (items.length === 0) {
-        Notify.warning("Sorry we didn't find anything");
-        return;
-      }
-
-      setImgList(prevState => [...prevState, ...items]);
-    } catch (err) {
-      Notify.failure('Oops!! Something goes wrong please try again');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const firstUpdate = useRef(true);
   const shouldEffectPage = useRef(false);
 
-  useEffect(() => {
-    if (firstUpdate.current) {
-      firstUpdate.current = false;
-      return;
-    }
-
-    setImgList([]);
-    loadPhotos();
-  }, [search]);
+  // useEffect(() => {
+  //   if (firstUpdate.current) {
+  //     firstUpdate.current = false;
+  //     return;
+  //   }
+  //
+  //   setImgList([]);
+  //   loadPhotos();
+  // }, [search]);
 
   useEffect(() => {
     if (!shouldEffectPage.current) {
@@ -60,10 +40,30 @@ export const App = () => {
       return;
     }
 
+    const loadPhotos = async () => {
+      setIsLoading(true);
+      try {
+        const items = await getPhotosByKey(search, page);
+        checkEndOfHits(items);
+
+        if (items.length === 0) {
+          Notify.warning("Sorry we didn't find anything");
+          return;
+        }
+
+        setImgList(prevState => [...prevState, ...items]);
+      } catch (err) {
+        Notify.failure('Oops!! Something goes wrong please try again');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     loadPhotos();
-  }, [page]);
+  }, [page, search]);
 
   const handleSubmit = async query => {
+    if (query !== search) setImgList([]);
     shouldEffectPage.current = false;
     await setPage(1);
     shouldEffectPage.current = true;

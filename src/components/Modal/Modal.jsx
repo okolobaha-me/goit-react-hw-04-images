@@ -13,7 +13,7 @@ export const Modal = ({ img, toggleOpenModal, alt }) => {
   });
 
   return (
-    <Overlay>
+    <Overlay onClick={toggleOpenModal}>
       <ModalImage src={`${img}`} alt={`${alt}`} />
     </Overlay>
   );
@@ -21,6 +21,6 @@ export const Modal = ({ img, toggleOpenModal, alt }) => {
 
 Modal.propTypes = {
   img: PropTypes.string.isRequired,
-  closeModal: PropTypes.func.isRequired,
+  toggleOpenModal: PropTypes.func.isRequired,
   alt: PropTypes.string.isRequired,
 };
