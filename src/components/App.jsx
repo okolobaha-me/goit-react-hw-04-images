@@ -20,19 +20,10 @@ export const App = () => {
 
   const checkEndOfHits = list => {
     if (list.length < PER_PAGE) setIsFinished(true);
+    else setIsFinished(false);
   };
 
   const shouldEffectPage = useRef(false);
-
-  // useEffect(() => {
-  //   if (firstUpdate.current) {
-  //     firstUpdate.current = false;
-  //     return;
-  //   }
-  //
-  //   setImgList([]);
-  //   loadPhotos();
-  // }, [search]);
 
   useEffect(() => {
     if (!shouldEffectPage.current) {
